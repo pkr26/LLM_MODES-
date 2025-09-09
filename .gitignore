@@ -178,4 +178,4 @@ backend/app.db
 backend/logs/
 
 # Frontend (separate repository)
-frontend/
+# frontend/

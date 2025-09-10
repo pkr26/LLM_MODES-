@@ -96,8 +96,9 @@ class Settings(BaseSettings):
     @validator('allowed_origins', pre=True)
     def parse_origins(cls, v):
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(',')]
-        return v
+            origins = [origin.strip() for origin in v.split(',') if origin.strip()]
+            return origins if origins else ["http://localhost:3000"]
+        return v if v else ["http://localhost:3000"]
     
     class Config:
         env_file = ".env"

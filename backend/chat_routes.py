@@ -64,11 +64,40 @@ async def get_chats(
     
     chats = query.offset(offset).limit(limit).all()
     
-    # Get message counts and last messages for each chat
+    # Optimize database queries using subqueries
+    chat_ids = [chat.id for chat in chats]
+    
+    # Get message counts for all chats in one query
+    message_counts = dict(
+        db.query(Message.chat_id, func.count(Message.id))
+        .filter(Message.chat_id.in_(chat_ids))
+        .group_by(Message.chat_id)
+        .all()
+    ) if chat_ids else {}
+    
+    # Get last messages for all chats in one query using a subquery
+    last_messages_subq = (
+        db.query(Message.chat_id, func.max(Message.created_at).label('max_created_at'))
+        .filter(Message.chat_id.in_(chat_ids))
+        .group_by(Message.chat_id)
+        .subquery()
+    ) if chat_ids else None
+    
+    last_messages = {}
+    if last_messages_subq is not None:
+        last_messages_query = (
+            db.query(Message)
+            .join(last_messages_subq, 
+                  (Message.chat_id == last_messages_subq.c.chat_id) & 
+                  (Message.created_at == last_messages_subq.c.max_created_at))
+        ).all()
+        last_messages = {msg.chat_id: msg for msg in last_messages_query}
+    
+    # Build chat responses efficiently
     chat_responses = []
     for chat in chats:
-        message_count = db.query(func.count(Message.id)).filter(Message.chat_id == chat.id).scalar()
-        last_message = db.query(Message).filter(Message.chat_id == chat.id).order_by(desc(Message.created_at)).first()
+        message_count = message_counts.get(chat.id, 0)
+        last_message = last_messages.get(chat.id)
         
         last_message_response = None
         if last_message:
@@ -77,7 +106,7 @@ async def get_chats(
                 chat_id=last_message.chat_id,
                 role=last_message.role.value,
                 content=last_message.content,
-                metadata=last_message.message_metadata,
+                message_metadata=last_message.message_metadata,
                 created_at=last_message.created_at
             )
         
@@ -119,7 +148,7 @@ async def get_chat(
             chat_id=msg.chat_id,
             role=msg.role.value,
             content=msg.content,
-            metadata=msg.message_metadata,
+            message_metadata=msg.message_metadata,
             created_at=msg.created_at
         ) for msg in chat.messages
     ]
@@ -163,7 +192,8 @@ async def update_chat(
     db.commit()
     db.refresh(chat)
     
-    message_count = db.query(func.count(Message.id)).filter(Message.chat_id == chat.id).scalar()
+    # Get message count efficiently
+    message_count = db.query(func.count(Message.id)).filter(Message.chat_id == chat.id).scalar() or 0
     
     return ChatResponse(
         id=chat.id,
@@ -236,7 +266,7 @@ async def create_message(
         chat_id=db_message.chat_id,
         role=db_message.role.value,
         content=db_message.content,
-        metadata=db_message.message_metadata,
+        message_metadata=db_message.message_metadata,
         created_at=db_message.created_at
     )
 
@@ -269,7 +299,7 @@ async def get_messages(
             chat_id=msg.chat_id,
             role=msg.role.value,
             content=msg.content,
-            metadata=msg.message_metadata,
+            message_metadata=msg.message_metadata,
             created_at=msg.created_at
         ) for msg in messages
     ]

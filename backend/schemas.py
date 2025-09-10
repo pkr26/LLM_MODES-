@@ -10,7 +10,7 @@ class UserBase(BaseModel):
     last_name: Annotated[str, Field(min_length=1, max_length=50, pattern=r'^[a-zA-Z\s\-\']+$')]
 
 class UserCreate(UserBase):
-    password: Annotated[str, Field(min_length=8, max_length=128)]
+    password: Annotated[str, Field(min_length=12, max_length=128)]
     confirm_password: str
     terms_accepted: bool = Field(..., description="Must accept terms and conditions")
     

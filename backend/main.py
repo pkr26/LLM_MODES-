@@ -79,9 +79,10 @@ def create_application() -> FastAPI:
     
     # Add security middleware
     if settings.environment == "production":
+        # TODO: Configure with actual production domains
         app.add_middleware(
             TrustedHostMiddleware,
-            allowed_hosts=["*"]  # Configure based on your domain
+            allowed_hosts=["your-domain.com", "*.your-domain.com"]
         )
     
     # Add CORS middleware
@@ -132,10 +133,13 @@ async def health_check() -> dict:
     try:
         # Test database connection
         from database import SessionLocal
+        from sqlalchemy import text
         db = SessionLocal()
-        db.execute("SELECT 1")
-        db.close()
-        db_status = "healthy"
+        try:
+            db.execute(text("SELECT 1"))
+            db_status = "healthy"
+        finally:
+            db.close()
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
         db_status = "unhealthy"

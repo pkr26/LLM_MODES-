@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Send, 
   Paperclip, 
@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import useChatStore from '../../stores/chatStore';
-import useAuthStore from '../../stores/authStore';
 
 const ChatInterface = () => {
   // const { user } = useAuthStore();
@@ -34,7 +33,7 @@ const ChatInterface = () => {
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
 
-  const currentMessages = messages[currentChatId] || [];
+  const currentMessages = useMemo(() => messages[currentChatId] || [], [messages, currentChatId]);
   const currentChat = chats[currentMode]?.find(chat => chat.id === currentChatId);
 
   useEffect(() => {
@@ -132,22 +131,22 @@ const ChatInterface = () => {
   };
 
   const MessageBubble = ({ message, isUser }) => (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-6`}>
       <div className={`max-w-3xl ${isUser ? 'order-2' : 'order-1'}`}>
         {/* Avatar */}
         <div className={`flex items-start space-x-3 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
             isUser 
               ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
               : 'bg-gradient-to-br from-gray-400 to-gray-600'
           }`}>
-            <span className="text-white text-sm font-medium">
+            <span className="text-white text-xs font-medium">
               {isUser ? 'Y' : 'AI'}
             </span>
           </div>
 
           {/* Message Content */}
-          <div className={`relative group ${isUser ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200'} rounded-2xl px-4 py-3 shadow-sm`}>
+          <div className={`relative group ${isUser ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/25' : 'bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-md'} rounded-2xl px-4 py-3`}>
             <div className="text-sm whitespace-pre-wrap break-words">
               {message.content}
             </div>
@@ -169,32 +168,32 @@ const ChatInterface = () => {
 
             {/* Message Actions */}
             {!isUser && (
-              <div className="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="flex items-center space-x-1 bg-white shadow-lg rounded-lg p-1 border">
+              <div className="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <div className="flex items-center space-x-0.5 bg-white/95 backdrop-blur-sm shadow-xl rounded-xl p-1 border border-slate-200/60">
                   <button
                     onClick={() => copyToClipboard(message.content)}
-                    className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+                    className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors duration-150"
                     title="Copy"
                   >
                     <Copy className="h-3 w-3" />
                   </button>
                   
                   <button
-                    className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+                    className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors duration-150"
                     title="Regenerate"
                   >
                     <RefreshCw className="h-3 w-3" />
                   </button>
                   
                   <button
-                    className="p-1 hover:bg-green-100 rounded text-gray-500 hover:text-green-600"
+                    className="p-1.5 hover:bg-green-50 rounded-lg text-slate-500 hover:text-green-600 transition-colors duration-150"
                     title="Good response"
                   >
                     <ThumbsUp className="h-3 w-3" />
                   </button>
                   
                   <button
-                    className="p-1 hover:bg-red-100 rounded text-gray-500 hover:text-red-600"
+                    className="p-1.5 hover:bg-red-50 rounded-lg text-slate-500 hover:text-red-600 transition-colors duration-150"
                     title="Poor response"
                   >
                     <ThumbsDown className="h-3 w-3" />
@@ -224,12 +223,12 @@ const ChatInterface = () => {
       onDrop={handleDrop}
     >
       {/* Chat Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 px-4 py-3 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-base font-semibold text-slate-900 tracking-tight">
             {currentChat?.title || 'Untitled Chat'}
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs text-slate-500 mt-0.5 font-medium">
             {currentMode === 'similar_questions' 
               ? 'Generate and explore similar questions' 
               : 'Process and analyze images'
@@ -262,21 +261,21 @@ const ChatInterface = () => {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-slate-50/20 to-white/50">
         {currentMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 {currentMode === 'similar_questions' ? (
-                  <MessageSquare className="h-8 w-8 text-gray-400" />
+                  <MessageSquare className="h-6 w-6 text-gray-400" />
                 ) : (
-                  <Image className="h-8 w-8 text-gray-400" />
+                  <Image className="h-6 w-6 text-gray-400" />
                 )}
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-base font-medium text-gray-900 mb-2">
                 Start the conversation
               </h3>
-              <p className="text-gray-600">
+              <p className="text-sm text-gray-600 max-w-sm mx-auto">
                 {currentMode === 'similar_questions'
                   ? 'Ask a question to get started with generating similar alternatives'
                   : 'Upload an image or describe what you\'d like to process'
@@ -297,14 +296,14 @@ const ChatInterface = () => {
             {isLoading && (
               <div className="flex justify-start mb-4">
                 <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">AI</span>
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
+                    <span className="text-white text-xs font-medium">AI</span>
                   </div>
-                  <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
+                  <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
                     <div className="flex space-x-2">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-100" />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-200" />
                     </div>
                   </div>
                 </div>
@@ -317,7 +316,7 @@ const ChatInterface = () => {
       </div>
 
       {/* Input Area */}
-      <div className="bg-white border-t border-gray-200 p-4">
+      <div className="bg-white/90 backdrop-blur-sm border-t border-slate-200/60 p-4">
         {/* File Upload Preview */}
         {uploadedFiles.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -348,7 +347,7 @@ const ChatInterface = () => {
                   ? 'Ask a question to generate similar alternatives...'
                   : 'Describe what you want to do with your images...'
               }
-              className="w-full resize-none border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32 min-h-[48px]"
+              className="w-full resize-none border border-slate-300/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 max-h-32 min-h-[48px] text-sm bg-white/80 backdrop-blur-sm shadow-sm transition-all duration-200"
               rows={1}
               disabled={isLoading}
             />
@@ -358,17 +357,17 @@ const ChatInterface = () => {
             {currentMode === 'image_processing' && (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all duration-150"
                 disabled={isLoading}
               >
-                <Paperclip className="h-5 w-5" />
+                <Paperclip className="h-4 w-4" />
               </button>
             )}
 
             <Button
               onClick={handleSendMessage}
               disabled={isLoading || (!inputText.trim() && uploadedFiles.length === 0)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl flex items-center space-x-2 text-sm font-medium shadow-lg shadow-blue-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="h-4 w-4" />
               <span className="hidden sm:inline">Send</span>
@@ -377,8 +376,8 @@ const ChatInterface = () => {
         </div>
 
         {/* Keyboard Shortcut Hint */}
-        <div className="mt-2 text-xs text-gray-500 text-center">
-          Press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Enter</kbd> to send • <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Shift + Enter</kbd> for new line
+        <div className="mt-3 text-xs text-slate-400 text-center font-medium">
+          Press <kbd className="px-2 py-1 bg-slate-100 rounded-md text-xs font-semibold text-slate-600 shadow-sm">Enter</kbd> to send • <kbd className="px-2 py-1 bg-slate-100 rounded-md text-xs font-semibold text-slate-600 shadow-sm">Shift + Enter</kbd> for new line
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
+import { tokenStorage } from '../services/authService';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -44,7 +45,7 @@ const useChatStore = create(
       },
 
       createChat: async (title, mode) => {
-        const token = localStorage.getItem('accessToken');
+        const token = tokenStorage.getAccessToken();
         if (!token) throw new Error('No authentication token');
 
         try {
@@ -77,7 +78,7 @@ const useChatStore = create(
       },
 
       fetchChats: async (mode) => {
-        const token = localStorage.getItem('accessToken');
+        const token = tokenStorage.getAccessToken();
         if (!token) return;
 
         try {
@@ -99,7 +100,7 @@ const useChatStore = create(
       },
 
       fetchChatDetail: async (chatId) => {
-        const token = localStorage.getItem('accessToken');
+        const token = tokenStorage.getAccessToken();
         if (!token) return;
 
         try {
@@ -120,7 +121,7 @@ const useChatStore = create(
       },
 
       fetchMessages: async (chatId) => {
-        const token = localStorage.getItem('accessToken');
+        const token = tokenStorage.getAccessToken();
         if (!token) return;
 
         try {
@@ -137,7 +138,7 @@ const useChatStore = create(
       },
 
       sendMessage: async (chatId, content, message_metadata = null) => {
-        const token = localStorage.getItem('accessToken');
+        const token = tokenStorage.getAccessToken();
         if (!token) throw new Error('No authentication token');
 
         try {
@@ -235,7 +236,7 @@ What would you like to do with your image?`;
       },
 
       updateChat: async (chatId, updates) => {
-        const token = localStorage.getItem('accessToken');
+        const token = tokenStorage.getAccessToken();
         if (!token) throw new Error('No authentication token');
 
         try {
@@ -264,7 +265,7 @@ What would you like to do with your image?`;
       },
 
       deleteChat: async (chatId) => {
-        const token = localStorage.getItem('accessToken');
+        const token = tokenStorage.getAccessToken();
         if (!token) throw new Error('No authentication token');
 
         try {
@@ -290,7 +291,7 @@ What would you like to do with your image?`;
       },
 
       fetchSettings: async (mode) => {
-        const token = localStorage.getItem('accessToken');
+        const token = tokenStorage.getAccessToken();
         if (!token) return;
 
         try {
@@ -307,7 +308,7 @@ What would you like to do with your image?`;
       },
 
       updateSettings: async (mode, newSettings) => {
-        const token = localStorage.getItem('accessToken');
+        const token = tokenStorage.getAccessToken();
         if (!token) throw new Error('No authentication token');
 
         try {

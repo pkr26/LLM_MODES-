@@ -9,7 +9,7 @@ from datetime import datetime
 
 def migrate_database():
     """Add first_name and last_name columns to the users table"""
-    db_path = "users.db"
+    db_path = "app.db"
     
     if not os.path.exists(db_path):
         print(f"Database file {db_path} not found. Creating new database with updated schema.")

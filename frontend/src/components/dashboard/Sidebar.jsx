@@ -137,10 +137,10 @@ const Sidebar = () => {
     
     return (
       <div
-        className={`group relative rounded-lg px-3 py-2 cursor-pointer transition-colors duration-150 ${
+        className={`group relative rounded-xl px-3 py-2.5 cursor-pointer transition-all duration-200 ${
           currentChatId === chat.id
-            ? 'bg-blue-100 border-l-2 border-blue-500'
-            : 'hover:bg-gray-100'
+            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-2 border-blue-500 shadow-sm'
+            : 'hover:bg-slate-50/70 hover:shadow-sm'
         }`}
         onClick={() => setCurrentChat(chat.id)}
         onMouseEnter={() => setShowActions(true)}
@@ -166,15 +166,15 @@ const Sidebar = () => {
               />
             ) : (
               <div>
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-semibold text-slate-900 truncate leading-tight">
                   {chat.title}
                 </p>
-                <div className="flex items-center space-x-2 mt-1">
-                  <span className="text-xs text-gray-500">
+                <div className="flex items-center space-x-2 mt-1.5">
+                  <span className="text-xs text-slate-500 font-medium">
                     {formatTimeAgo(chat.updated_at)}
                   </span>
                   {chat.message_count > 0 && (
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-slate-400">
                       • {chat.message_count} messages
                     </span>
                   )}
@@ -251,10 +251,10 @@ const Sidebar = () => {
 
     return (
       <div className="mb-4">
-        <div className="flex items-center space-x-2 px-3 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">
+        <div className="flex items-center space-x-2 px-3 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
           {Icon && <Icon className="h-3 w-3" />}
           <span>{title}</span>
-          <span className="text-gray-400">({chats.length})</span>
+          <span className="text-slate-400 font-normal bg-slate-100 px-1.5 py-0.5 rounded-full">({chats.length})</span>
         </div>
         <div className="space-y-1 mt-2">
           {chats.map(chat => (
@@ -289,20 +289,20 @@ const Sidebar = () => {
   }
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-80 bg-white/50 backdrop-blur-sm border-r border-slate-200/60 flex flex-col">
       {/* Sidebar Header */}
-      <div className="px-4 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+      <div className="px-4 py-4 border-b border-slate-200/60">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-slate-900 tracking-tight">
             {currentMode === 'similar_questions' ? 'Questions' : 'Image Processing'}
           </h2>
           
           <button
             onClick={() => setSidebarCollapsed(true)}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors duration-150"
             title="Collapse sidebar"
           >
-            <ChevronLeft className="h-4 w-4 text-gray-600" />
+            <ChevronLeft className="h-3.5 w-3.5 text-slate-600" />
           </button>
         </div>
 
@@ -310,21 +310,21 @@ const Sidebar = () => {
         <Button
           onClick={handleCreateChat}
           disabled={isCreatingChat}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center space-x-2 mb-4"
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white flex items-center justify-center space-x-2 mb-3 h-9 text-sm rounded-xl shadow-lg shadow-blue-500/25 border-0 font-medium transition-all duration-200"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-3.5 w-3.5" />
           <span>{isCreatingChat ? 'Creating...' : 'New Chat'}</span>
         </Button>
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <input
             type="text"
             placeholder="Search chats..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-sm"
+            className="w-full pl-9 pr-3 py-2 bg-slate-50/50 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white/80 focus:border-blue-200 text-sm h-9 transition-all duration-200"
           />
         </div>
       </div>
@@ -333,7 +333,7 @@ const Sidebar = () => {
       <div className="flex-1 overflow-y-auto px-4 py-2">
         {filteredChats.length === 0 ? (
           <div className="text-center py-8">
-            <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <MessageSquare className="h-10 w-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 text-sm">
               {searchQuery ? 'No chats found' : 'No chats yet'}
             </p>

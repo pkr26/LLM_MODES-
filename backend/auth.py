@@ -89,34 +89,38 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         "iat": datetime.now(timezone.utc).timestamp(),
         "type": "access"
     })
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt
 
 def create_refresh_token(user_id: int, db: Session, request: Request = None) -> str:
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
     
     ip_address = None
     user_agent = None
     if request:
-        ip_address = request.client.host
+        ip_address = request.client.host if request.client else None
         user_agent = request.headers.get("user-agent")
     
-    db_refresh_token = RefreshToken(
-        token=token,
-        user_id=user_id,
-        expires_at=expires_at,
-        ip_address=ip_address,
-        user_agent=user_agent
-    )
-    db.add(db_refresh_token)
-    db.commit()
-    
-    return token
+    try:
+        db_refresh_token = RefreshToken(
+            token=token,
+            user_id=user_id,
+            expires_at=expires_at,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        db.add(db_refresh_token)
+        db.commit()
+        return token
+    except Exception as e:
+        logger.error(f"Error creating refresh token: {e}")
+        db.rollback()
+        raise
 
 def verify_token(token: str) -> Optional[dict]:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         return payload
     except JWTError:
         return None
@@ -138,7 +142,7 @@ def check_password_history(db: Session, user_id: int, new_password: str) -> bool
     """Check if password was used recently"""
     password_history = db.query(PasswordHistory).filter(
         PasswordHistory.user_id == user_id
-    ).order_by(PasswordHistory.created_at.desc()).limit(PASSWORD_HISTORY_COUNT).all()
+    ).order_by(PasswordHistory.created_at.desc()).limit(settings.password_history_count).all()
     
     for old_password in password_history:
         if verify_password(new_password, old_password.hashed_password):
@@ -147,21 +151,26 @@ def check_password_history(db: Session, user_id: int, new_password: str) -> bool
 
 def add_password_to_history(db: Session, user_id: int, hashed_password: str):
     """Add password to history and clean old ones"""
-    password_entry = PasswordHistory(
-        user_id=user_id,
-        hashed_password=hashed_password
-    )
-    db.add(password_entry)
-    
-    # Clean old password history
-    old_passwords = db.query(PasswordHistory).filter(
-        PasswordHistory.user_id == user_id
-    ).order_by(PasswordHistory.created_at.desc()).offset(PASSWORD_HISTORY_COUNT).all()
-    
-    for old_password in old_passwords:
-        db.delete(old_password)
-    
-    db.commit()
+    try:
+        password_entry = PasswordHistory(
+            user_id=user_id,
+            hashed_password=hashed_password
+        )
+        db.add(password_entry)
+        
+        # Clean old password history
+        old_passwords = db.query(PasswordHistory).filter(
+            PasswordHistory.user_id == user_id
+        ).order_by(PasswordHistory.created_at.desc()).offset(settings.password_history_count).all()
+        
+        for old_password in old_passwords:
+            db.delete(old_password)
+        
+        db.commit()
+    except Exception as e:
+        logger.error(f"Error adding password to history: {e}")
+        db.rollback()
+        raise
 
 def is_account_locked(user: User) -> bool:
     """Check if account is locked due to failed login attempts"""
@@ -173,8 +182,8 @@ def increment_failed_login(db: Session, user: User):
     """Increment failed login attempts and lock account if necessary"""
     user.failed_login_attempts += 1
     
-    if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
-        user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+    if user.failed_login_attempts >= settings.max_login_attempts:
+        user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=settings.lockout_duration_minutes)
     
     db.commit()
 
@@ -229,20 +238,26 @@ def create_password_reset(db: Session, user_id: int) -> str:
 
 def create_user(db: Session, email: str, first_name: str, last_name: str, password: str) -> User:
     hashed_password = get_password_hash(password)
-    db_user = User(
-        email=email,
-        first_name=first_name,
-        last_name=last_name,
-        hashed_password=hashed_password
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
     
-    # Add initial password to history
-    add_password_to_history(db, db_user.id, hashed_password)
-    
-    return db_user
+    try:
+        db_user = User(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            hashed_password=hashed_password
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        
+        # Add initial password to history
+        add_password_to_history(db, db_user.id, hashed_password)
+        
+        return db_user
+    except Exception as e:
+        logger.error(f"Error creating user: {e}")
+        db.rollback()
+        raise
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),

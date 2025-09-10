@@ -7,14 +7,15 @@ from slowapi.errors import RateLimitExceeded
 import logging
 
 from database import get_db
-from schemas import UserCreate, UserLogin, UserResponse, Token, TokenRefresh, Message
+from models import User
+from schemas import UserCreate, UserLogin, UserResponse, Token, TokenRefresh, Message, EmailData, PasswordResetRequest, ChangePasswordRequest
 from auth import (
     authenticate_user, create_user, get_user_by_email,
     create_access_token, create_refresh_token, verify_refresh_token,
     revoke_refresh_token, get_current_user, is_account_locked,
     increment_failed_login, reset_failed_login_attempts,
     create_email_verification, create_password_reset, check_password_history,
-    add_password_to_history, get_password_hash
+    add_password_to_history, get_password_hash, verify_password
 )
 
 # Rate limiting setup
@@ -144,13 +145,8 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
 
 @router.post("/forgot-password", response_model=Message)
 @limiter.limit("3/minute")
-async def forgot_password(request: Request, email_data: dict, db: Session = Depends(get_db)):
-    email = email_data.get("email")
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email is required"
-        )
+async def forgot_password(request: Request, email_data: EmailData, db: Session = Depends(get_db)):
+    email = email_data.email
     
     user = get_user_by_email(db, email)
     if user:
@@ -163,15 +159,9 @@ async def forgot_password(request: Request, email_data: dict, db: Session = Depe
 
 @router.post("/reset-password", response_model=Message)
 @limiter.limit("5/minute")
-async def reset_password(request: Request, reset_data: dict, db: Session = Depends(get_db)):
-    token = reset_data.get("token")
-    new_password = reset_data.get("new_password")
-    
-    if not token or not new_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token and new password are required"
-        )
+async def reset_password(request: Request, reset_data: PasswordResetRequest, db: Session = Depends(get_db)):
+    token = reset_data.token
+    new_password = reset_data.new_password
     
     # Find valid reset token
     from models import PasswordReset
@@ -235,5 +225,47 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
     db.commit()
     
     return {"message": "Email verified successfully"}
+
+@router.post("/change-password", response_model=Message)
+@limiter.limit("5/minute")
+async def change_password(
+    request: Request, 
+    change_data: ChangePasswordRequest, 
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Verify current password
+    if not verify_password(change_data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+    
+    # Check password history
+    if not check_password_history(db, current_user.id, change_data.new_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot reuse recent passwords"
+        )
+    
+    # Check if new password is same as current
+    if verify_password(change_data.new_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password cannot be the same as current password"
+        )
+    
+    # Update password
+    from datetime import datetime, timezone
+    hashed_password = get_password_hash(change_data.new_password)
+    current_user.hashed_password = hashed_password
+    current_user.password_changed_at = datetime.now(timezone.utc)
+    
+    # Add to password history
+    add_password_to_history(db, current_user.id, hashed_password)
+    
+    db.commit()
+    
+    return {"message": "Password changed successfully"}
 
 # Exception handlers are added to the main app, not router

@@ -5,14 +5,14 @@ import MainContent from './dashboard/MainContent';
 import useChatStore from '../stores/chatStore';
 
 const Dashboard = () => {
-  const { initialize, sidebarCollapsed } = useChatStore();
+  const { initialize } = useChatStore();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-slate-50 flex flex-col overflow-hidden">
       {/* Fixed Top Navigation */}
       <TopNavigation />
       
@@ -22,11 +22,7 @@ const Dashboard = () => {
         <Sidebar />
         
         {/* Main Content Area */}
-        <div 
-          className={`flex-1 transition-all duration-300 ease-in-out ${
-            sidebarCollapsed ? 'ml-0' : 'ml-0'
-          }`}
-        >
+        <div className="flex-1 overflow-hidden">
           <MainContent />
         </div>
       </div>
